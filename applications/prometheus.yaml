@@ -62,4 +62,24 @@ spec:
   selector:
     prometheus: tata-prometheus
 
-
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: monitor-ingress
+  namespace: monitor
+  annotations:
+    haproxy.org/ssl-redirect: "false"
+spec:
+  ingressClassName: haproxy
+  rules:
+    - host: prometheus.service.rke2.lab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tata-prometheus
+                port:
+                  name: web
