@@ -1,0 +1,85 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Alertmanager
+metadata:
+  name: tata-alertmanager
+  namespace: monitor
+  labels:
+    app.kubernetes.io/monitored_by: tata-monitor
+spec:
+  replicas: 1
+  retention: 2160h
+  alertmanagerConfigNamespaceSelector: {}
+  alertmanagerConfigSelector:
+    matchLabels:
+      app.kubernetes.io/monitored_by: tata-monitor
+  containers:
+    - name: alertmanager
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+    - name: config-reloader
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+  initContainers:
+    - name: init-config-reloader
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tata-alertmanager
+  namespace: monitor
+  labels:
+    alertmanager: tata-alertmanager
+spec:
+  ports:
+    - name: web
+      port: 9093
+      targetPort: web
+  selector:
+    alertmanager: tata-alertmanager
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-tata-alertmanager
+  namespace: monitor
+  labels:
+    app.kubernetes.io/monitored_by: tata-monitor
+type: Opaque
+data:
+  alertmanager.yaml: |
+    Z2xvYmFsOgogIHNtdHBfc21hcnRob3N0OiAnc210cDRkZXYubW9uaXRvci5zdmMuY2x1c3Rlci5sb2NhbDoyNScKICBzbXRwX2Zyb206ICdhbGVydHMtb3N0a0B0YXRhY29tbXVuaWNhdGlvbnMuY29tJwogIHNtdHBfaGVsbG86ICdhbGVydG1hbmFnZXIubG9jYWwnCiAgc210cF9yZXF1aXJlX3RsczogZmFsc2UKCnJvdXRlOgogIGdyb3VwX2J5OiBbJ2FsZXJ0bmFtZSddCiAgZ3JvdXBfd2FpdDogMTBzCiAgZ3JvdXBfaW50ZXJ2YWw6IDMwcwogIHJlcGVhdF9pbnRlcnZhbDogMWgKICByZWNlaXZlcjogJ21haWwtZGV2JwoKcmVjZWl2ZXJzOgogIC0gbmFtZTogJ21haWwtZGV2JwogICAgZW1haWxfY29uZmlnczoKICAgICAgLSB0bzogJ29wZXJhdGlvbnNAdGF0YWNvbW11bmljYXRpb25zLmNvbScKICAgICAgICBzZW5kX3Jlc29sdmVkOiB0cnVlCiAgICAgICAgaGVhZGVyczoKICAgICAgICAgIFN1YmplY3Q6ICdbe3sgLlN0YXR1cyB8IHRvVXBwZXIgfX06e3sgbGVuIC5BbGVydHMgfX1dIHt7IC5Db21tb25MYWJlbHMuYWxlcnRuYW1lIH19IC0ge3sgLkNvbW1vbkxhYmVscy5pbnN0YW5jZSB9fScKICAgICAgICBodG1sOiB8CiAgICAgICAgICA8aHRtbD4KICAgICAgICAgICAgPGhlYWQ+CiAgICAgICAgICAgICAgPHN0eWxlPgogICAgICAgICAgICAgICAgYm9keSB7CiAgICAgICAgICAgICAgICAgIGZvbnQtZmFtaWx5OiBBcmlhbCwgc2Fucy1zZXJpZjsKICAgICAgICAgICAgICAgICAgY29sb3I6ICMxMTE7CiAgICAgICAgICAgICAgICAgIGJhY2tncm91bmQtY29sb3I6ICNmZmY7CiAgICAgICAgICAgICAgICAgIHBhZGRpbmc6IDIwcHg7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICBoMiB7CiAgICAgICAgICAgICAgICAgIGNvbG9yOiAjMmMxZTU1OwogICAgICAgICAgICAgICAgICBib3JkZXItdG9wOiA0cHggc29saWQgIzVmMjU5ZjsKICAgICAgICAgICAgICAgICAgcGFkZGluZy10b3A6IDEwcHg7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICB0YWJsZSB7CiAgICAgICAgICAgICAgICAgIGJvcmRlci1jb2xsYXBzZTogY29sbGFwc2U7CiAgICAgICAgICAgICAgICAgIHdpZHRoOiA1MDBweDsKICAgICAgICAgICAgICAgICAgbWFyZ2luOiAyMHB4IDA7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICB0aCB7CiAgICAgICAgICAgICAgICAgIGJhY2tncm91bmQtY29sb3I6ICNlOWU5ZTk7CiAgICAgICAgICAgICAgICAgIHRleHQtYWxpZ246IGxlZnQ7CiAgICAgICAgICAgICAgICAgIHBhZGRpbmc6IDhweDsKICAgICAgICAgICAgICAgICAgZm9udC13ZWlnaHQ6IGJvbGQ7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICB0ZCB7CiAgICAgICAgICAgICAgICAgIHBhZGRpbmc6IDhweDsKICAgICAgICAgICAgICAgICAgYm9yZGVyLWJvdHRvbTogMXB4IHNvbGlkICNkZGQ7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAuc2VjdGlvbi10aXRsZSB7CiAgICAgICAgICAgICAgICAgIGZvbnQtd2VpZ2h0OiBib2xkOwogICAgICAgICAgICAgICAgICBtYXJnaW4tdG9wOiAyMHB4OwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgLnNlY3Rpb24tY29udGVudCB7CiAgICAgICAgICAgICAgICAgIG1hcmdpbi10b3A6IDEwcHg7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAuZm9vdGVyIHsKICAgICAgICAgICAgICAgICAgbWFyZ2luLXRvcDogNDBweDsKICAgICAgICAgICAgICAgICAgZm9udC1zaXplOiAxMnB4OwogICAgICAgICAgICAgICAgICBjb2xvcjogIzg4ODsKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICA8L3N0eWxlPgogICAgICAgICAgICA8L2hlYWQ+CiAgICAgICAgICAgIDxib2R5PgogICAgICAgICAgICAgIHt7IHJhbmdlIC5BbGVydHMgfX0KICAgICAgICAgICAgICA8aDI+8J+aqFt7eyAuTGFiZWxzLmluc3RhbmNlIH19XSBBbGVydDoge3sgLkxhYmVscy5hbGVydG5hbWUgfX08L2gyPgoKICAgICAgICAgICAgICA8dGFibGU+CiAgICAgICAgICAgICAgICA8dHI+PHRoIGNvbHNwYW49IjIiPkludmVudG9yeSBJbmZvcm1hdGlvbjwvdGg+PC90cj4KICAgICAgICAgICAgICAgIDx0cj48dGQ+PHN0cm9uZz5Ob2RlIE5hbWU8L3N0cm9uZz48L3RkPjx0ZD57eyAuTGFiZWxzLm5vZGVuYW1lIH19PC90ZD48L3RyPgogICAgICAgICAgICAgICAgPHRyPjx0ZD48c3Ryb25nPkluc3RhbmNlPC9zdHJvbmc+PC90ZD48dGQ+e3sgLkxhYmVscy5pbnN0YW5jZSB9fTwvdGQ+PC90cj4KICAgICAgICAgICAgICAgIDx0cj48dGQ+PHN0cm9uZz5TZXZlcml0eTwvc3Ryb25nPjwvdGQ+PHRkPnt7IC5MYWJlbHMuc2V2ZXJpdHkgfX08L3RkPjwvdHI+CiAgICAgICAgICAgICAgICA8dHI+PHRkPjxzdHJvbmc+VGlja2V0IFByaW9yaXR5PC9zdHJvbmc+PC90ZD48dGQ+e3sgLkxhYmVscy5wcmlvcml0eSB9fTwvdGQ+PC90cj4KICAgICAgICAgICAgICA8L3RhYmxlPgoKICAgICAgICAgICAgICA8ZGl2IGNsYXNzPSJzZWN0aW9uLXRpdGxlIj7wn5OdIERlc2NyaXB0aW9uPC9kaXY+CiAgICAgICAgICAgICAgPGRpdiBjbGFzcz0ic2VjdGlvbi1jb250ZW50Ij57eyAuQW5ub3RhdGlvbnMuZGVzY3JpcHRpb24gfCBzYWZlSHRtbCB9fTwvZGl2PgoKICAgICAgICAgICAgICB7eyBpZiAuQW5ub3RhdGlvbnMucmVhc29ucyB9fQogICAgICAgICAgICAgIDxkaXYgY2xhc3M9InNlY3Rpb24tdGl0bGUiPvCflI0gUG90ZW50aWFsIFJlYXNvbnM8L2Rpdj4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzPSJzZWN0aW9uLWNvbnRlbnQiPnt7IC5Bbm5vdGF0aW9ucy5yZWFzb25zICB8IHNhZmVIdG1sfX08L2Rpdj4KICAgICAgICAgICAgICB7eyBlbmQgfX0KCiAgICAgICAgICAgICAge3sgaWYgLkFubm90YXRpb25zLmZpeGVzIH19CiAgICAgICAgICAgICAgPGRpdiBjbGFzcz0ic2VjdGlvbi10aXRsZSI+8J+UpyBTdWdnZXN0ZWQgRml4ZXM8L2Rpdj4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzPSJzZWN0aW9uLWNvbnRlbnQiPnt7IC5Bbm5vdGF0aW9ucy5maXhlcyB8IHNhZmVIdG1sIH19PC9kaXY+CiAgICAgICAgICAgICAge3sgZW5kIH19CgogICAgICAgICAgICAgIDxocj4KICAgICAgICAgICAgICB7eyBlbmQgfX0KCiAgICAgICAgICAgICAgPGRpdiBjbGFzcz0iZm9vdGVyIj4KICAgICAgICAgICAgICAgIEFsZXJ0cyBnZW5lcmF0ZWQgYnkgUHJvbWV0aGV1cyBBbGVydG1hbmFnZXI8YnI+CiAgICAgICAgICAgICAgICA8YSBocmVmPSJ7eyAuRXh0ZXJuYWxVUkwgfX0iPnt7IC5FeHRlcm5hbFVSTCB9fTwvYT4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPC9ib2R5PgogICAgICAgICAgPC9odG1sPgo=
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: monitor-ingress
+  namespace: monitor
+  annotations:
+    haproxy.org/ssl-redirect: "false"
+spec:
+  ingressClassName: haproxy
+  rules:
+    - host: alertmanager.service.rke2.lab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tata-alertmanager
+                port:
+                  name: web
