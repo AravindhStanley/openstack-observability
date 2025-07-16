@@ -1,0 +1,65 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: tata-prometheus
+  namespace: monitor
+  labels:
+    app.kubernetes.io/monitored_by: tata-monitor
+spec:
+  replicas: 3
+  serviceAccountName: tata-prometheus
+  ruleNamespaceSelector: {}
+  ruleSelector:
+    matchLabels:
+      app.kubernetes.io/monitored_by: tata-monitor
+  podMonitorSelector:
+    matchLabels:
+      app.kubernetes.io/monitored_by: tata-monitor
+  probeSelector:
+    matchLabels:
+      app.kubernetes.io/monitored_by: tata-monitor
+  ruleNamespaceSelector: {}
+  ruleSelector:
+    matchLabels:
+      app.kubernetes.io/monitored_by: tata-monitor
+  scrapeConfigNamespaceSelector: {}
+  scrapeConfigSelector:
+    matchLabels:
+      app.kubernetes.io/monitored_by: tata-monitor
+  serviceMonitorNamespaceSelector: {}
+  serviceMonitorSelector:
+    matchLabels:
+      app.kubernetes.io/monitored_by: tata-monitor
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: local-path
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 30Gi
+  alerting:
+    alertmanagers:
+    - apiVersion: v2
+      pathPrefix: /
+      namespace: monitor
+      name: alertmanager-operated
+      port: web
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tata-prometheus
+  namespace: monitor
+  labels:
+    prometheus: tata-prometheus
+spec:
+  ports:
+    - name: web
+      port: 9090
+      targetPort: web
+  selector:
+    prometheus: tata-prometheus
+
+
